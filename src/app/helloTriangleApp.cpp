@@ -152,16 +152,9 @@ void HelloTriangleApplication::pickPhysicalDevice()
 
 bool HelloTriangleApplication::isDeviceSuitable(const VkPhysicalDevice device) const
 {
-	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(device, &deviceProperties);
-
-	VkPhysicalDeviceFeatures deviceFeatures;
-	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
 	QueueFamilyIndices indices = findQueueFamilies(device);
 
-	return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && deviceFeatures.geometryShader &&
-		   indices.isComplete();
+	return indices.isComplete();
 }
 
 VkDebugUtilsMessengerCreateInfoEXT HelloTriangleApplication::getDebugMessengerCreateInfo()
