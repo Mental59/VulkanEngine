@@ -15,6 +15,7 @@ public:
 private:
 	GLFWwindow* mWindow = nullptr;
 	VkInstance mVulkanInstance = VK_NULL_HANDLE;
+	VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
 
 #ifdef _DEBUG
 	VkDebugUtilsMessengerEXT mDebugMessenger = VK_NULL_HANDLE;
@@ -34,6 +35,8 @@ private:
 	void initVulkan();
 	void createVulkanInstance();
 	void setupDebugMessenger();
+	void pickPhysicalDevice();
+	bool isDeviceSuitable(const VkPhysicalDevice device) const;
 	VkDebugUtilsMessengerCreateInfoEXT getDebugMessengerCreateInfo();
 	void initializeExtensionFunctions();
 

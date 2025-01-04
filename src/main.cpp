@@ -12,7 +12,7 @@ int main()
 	}
 	catch (const std::exception& error)
 	{
-		std::cerr << std::format("APPLICATION TERMINATED: {}\n", error.what());
+		std::cerr << std::format("APPLICATION TERMINATED, {}\n", error.what());
 		return 1;
 	}
 

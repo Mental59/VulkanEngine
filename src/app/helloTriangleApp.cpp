@@ -6,6 +6,7 @@
 #include <vector>
 #include <format>
 #include "helloTriangleApp.hpp"
+#include "graphics/vulkan/queue.hpp"
 
 static constexpr int WINDOW_WIDTH = 1280;
 static constexpr int WINDOW_HEIGHT = 720;
@@ -59,6 +60,7 @@ void HelloTriangleApplication::initVulkan()
 	createVulkanInstance();
 	initializeExtensionFunctions();
 	setupDebugMessenger();
+	pickPhysicalDevice();
 }
 
 void HelloTriangleApplication::createVulkanInstance()
@@ -118,6 +120,48 @@ void HelloTriangleApplication::setupDebugMessenger()
 		throw std::runtime_error("ERROR: failed to create debug messenger");
 	}
 #endif
+}
+
+void HelloTriangleApplication::pickPhysicalDevice()
+{
+	uint32_t deviceCount = 0;
+
+	vkEnumeratePhysicalDevices(mVulkanInstance, &deviceCount, nullptr);
+	if (deviceCount == 0)
+	{
+		throw std::runtime_error("ERROR: failed to find GPUs with Vulkan support");
+	}
+
+	std::vector<VkPhysicalDevice> devices(deviceCount);
+	vkEnumeratePhysicalDevices(mVulkanInstance, &deviceCount, devices.data());
+
+	for (const VkPhysicalDevice device : devices)
+	{
+		if (isDeviceSuitable(device))
+		{
+			mPhysicalDevice = device;
+			break;
+		}
+	}
+
+	if (mPhysicalDevice == VK_NULL_HANDLE)
+	{
+		throw std::runtime_error("ERROR: failed to find a suitable GPU");
+	}
+}
+
+bool HelloTriangleApplication::isDeviceSuitable(const VkPhysicalDevice device) const
+{
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+	VkPhysicalDeviceFeatures deviceFeatures;
+	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+	QueueFamilyIndices indices = findQueueFamilies(device);
+
+	return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && deviceFeatures.geometryShader &&
+		   indices.isComplete();
 }
 
 VkDebugUtilsMessengerCreateInfoEXT HelloTriangleApplication::getDebugMessengerCreateInfo()
