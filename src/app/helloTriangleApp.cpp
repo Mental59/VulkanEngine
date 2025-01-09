@@ -61,6 +61,7 @@ void HelloTriangleApplication::initVulkan()
 	initializeExtensionFunctions();
 	setupDebugMessenger();
 	pickPhysicalDevice();
+	createLogicalDevice();
 }
 
 void HelloTriangleApplication::createVulkanInstance()
@@ -148,6 +149,43 @@ void HelloTriangleApplication::pickPhysicalDevice()
 	{
 		throw std::runtime_error("ERROR: failed to find a suitable GPU");
 	}
+}
+
+void HelloTriangleApplication::createLogicalDevice()
+{
+	QueueFamilyIndices indices = findQueueFamilies(mPhysicalDevice);
+
+	VkDeviceQueueCreateInfo queueCreateInfo{};
+	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+	queueCreateInfo.queueCount = 1;
+
+	float queuePriority = 1.0f;
+	queueCreateInfo.pQueuePriorities = &queuePriority;
+
+	VkPhysicalDeviceFeatures deviceFeatures{};
+
+	VkDeviceCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pQueueCreateInfos = &queueCreateInfo;
+	createInfo.queueCreateInfoCount = 1;
+	createInfo.pEnabledFeatures = &deviceFeatures;
+
+	createInfo.enabledExtensionCount = 0;
+
+#ifdef _DEBUG
+	createInfo.enabledLayerCount = static_cast<uint32_t>(VALIDATION_LAYERS.size());
+	createInfo.ppEnabledLayerNames = VALIDATION_LAYERS.data();
+#else
+	createInfo.enabledLayerCount = 0;
+#endif
+
+	if (vkCreateDevice(mPhysicalDevice, &createInfo, nullptr, &mDevice) != VK_SUCCESS)
+	{
+		throw std::runtime_error("ERROR: failed to create logical device!");
+	}
+
+	vkGetDeviceQueue(mDevice, indices.graphicsFamily.value(), 0, &mGraphicsQueue);
 }
 
 bool HelloTriangleApplication::isDeviceSuitable(const VkPhysicalDevice device) const
@@ -284,6 +322,7 @@ void HelloTriangleApplication::cleanup()
 	destroyDebugUtilsMessage(mVulkanInstance, mDebugMessenger, nullptr);
 #endif	// _DEBUG
 
+	vkDestroyDevice(mDevice, nullptr);
 	vkDestroyInstance(mVulkanInstance, nullptr);
 	glfwDestroyWindow(mWindow);
 	glfwTerminate();
