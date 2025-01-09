@@ -24,14 +24,14 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
 
 	for (uint32_t i = 0; i < queueFamilyCount; i++)
 	{
-		if (indices.isComplete())
-		{
-			break;
-		}
-
 		if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 		{
 			indices.graphicsFamily = i;
+		}
+
+		if (indices.isComplete())
+		{
+			break;
 		}
 	}
 
