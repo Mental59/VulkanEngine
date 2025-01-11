@@ -19,6 +19,8 @@ private:
 	VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
 	VkDevice mDevice = VK_NULL_HANDLE;
 	VkQueue mGraphicsQueue = VK_NULL_HANDLE;
+	VkQueue mPresentQueue = VK_NULL_HANDLE;
+	VkSurfaceKHR mSurface = VK_NULL_HANDLE;
 
 #ifdef _DEBUG
 	DebugMessenger mDebugMessenger;
@@ -30,6 +32,7 @@ private:
 	void initVulkan();
 	void createVulkanInstance();
 	void initDebugMessenger();
+	void createSurface();
 	void pickPhysicalDevice();
 	void createLogicalDevice();
 	bool isDeviceSuitable(const VkPhysicalDevice device) const;
