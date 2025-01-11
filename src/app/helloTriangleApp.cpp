@@ -22,7 +22,6 @@ void HelloTriangleApplication::run()
 {
 	initWindow();
 	initVulkan();
-
 	startMainLoop();
 }
 
@@ -33,14 +32,6 @@ void HelloTriangleApplication::keyCallback(GLFWwindow* window, int key, int scan
 		glfwSetWindowShouldClose(window, true);
 		return;
 	}
-}
-
-VKAPI_ATTR VkBool32 VKAPI_CALL HelloTriangleApplication::debugCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType,
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
-{
-	std::cerr << "Validation layer message: " << pCallbackData->pMessage << std::endl;
-	return VK_FALSE;
 }
 
 void HelloTriangleApplication::initWindow()
@@ -58,8 +49,7 @@ void HelloTriangleApplication::initWindow()
 void HelloTriangleApplication::initVulkan()
 {
 	createVulkanInstance();
-	initializeExtensionFunctions();
-	setupDebugMessenger();
+	initDebugMessenger();
 	pickPhysicalDevice();
 	createLogicalDevice();
 }
@@ -100,7 +90,7 @@ void HelloTriangleApplication::createVulkanInstance()
 	instanceCreateInfo.enabledLayerCount = VALIDATION_LAYERS.size();
 	instanceCreateInfo.ppEnabledLayerNames = VALIDATION_LAYERS.data();
 
-	VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = getDebugMessengerCreateInfo();
+	VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = mDebugMessenger.getDebugMessengerCreateInfo();
 	instanceCreateInfo.pNext = &debugMessengerCreateInfo;
 #else
 	instanceCreateInfo.enabledLayerCount = 0;
@@ -110,17 +100,6 @@ void HelloTriangleApplication::createVulkanInstance()
 	{
 		throw std::runtime_error("ERROR: failed to create vulkan instance");
 	}
-}
-
-void HelloTriangleApplication::setupDebugMessenger()
-{
-#ifdef _DEBUG
-	VkDebugUtilsMessengerCreateInfoEXT createInfo = getDebugMessengerCreateInfo();
-	if (createDebugUtilsMessage(mVulkanInstance, &createInfo, nullptr, &mDebugMessenger) != VK_SUCCESS)
-	{
-		throw std::runtime_error("ERROR: failed to create debug messenger");
-	}
-#endif
 }
 
 void HelloTriangleApplication::pickPhysicalDevice()
@@ -149,6 +128,13 @@ void HelloTriangleApplication::pickPhysicalDevice()
 	{
 		throw std::runtime_error("ERROR: failed to find a suitable GPU");
 	}
+}
+
+void HelloTriangleApplication::initDebugMessenger()
+{
+#ifdef _DEBUG
+	mDebugMessenger.init(mVulkanInstance);
+#endif
 }
 
 void HelloTriangleApplication::createLogicalDevice()
@@ -193,35 +179,6 @@ bool HelloTriangleApplication::isDeviceSuitable(const VkPhysicalDevice device) c
 	QueueFamilyIndices indices = findQueueFamilies(device);
 
 	return indices.isComplete();
-}
-
-VkDebugUtilsMessengerCreateInfoEXT HelloTriangleApplication::getDebugMessengerCreateInfo()
-{
-	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-								 VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-								 VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	createInfo.messageType =
-		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
-	createInfo.pfnUserCallback = debugCallback;
-	return createInfo;
-}
-
-void HelloTriangleApplication::initializeExtensionFunctions()
-{
-#ifdef _DEBUG
-	createDebugUtilsMessage =
-		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(mVulkanInstance, "vkCreateDebugUtilsMessengerEXT");
-	destroyDebugUtilsMessage =
-		(PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(mVulkanInstance, "vkDestroyDebugUtilsMessengerEXT");
-
-	if (!createDebugUtilsMessage || !destroyDebugUtilsMessage)
-	{
-		throw std::runtime_error("ERROR: failed to initialize debug extension functions");
-	}
-#endif
 }
 
 void HelloTriangleApplication::checkMandatoryExtensionsForSupport(const std::vector<const char*>& mandatoryExtensions)
@@ -296,8 +253,7 @@ bool HelloTriangleApplication::isExtensionSupported(
 std::vector<const char*> HelloTriangleApplication::getMandatoryExtensions()
 {
 	uint32_t mandatoryExtensionCount = 0;
-	const char** mandatoryExtensionNames;
-	mandatoryExtensionNames = glfwGetRequiredInstanceExtensions(&mandatoryExtensionCount);
+	const char** mandatoryExtensionNames = glfwGetRequiredInstanceExtensions(&mandatoryExtensionCount);
 	std::vector<const char*> mandatoryExtensionVector(
 		mandatoryExtensionNames, mandatoryExtensionNames + mandatoryExtensionCount);
 
@@ -319,8 +275,8 @@ void HelloTriangleApplication::startMainLoop()
 void HelloTriangleApplication::cleanup()
 {
 #ifdef _DEBUG
-	destroyDebugUtilsMessage(mVulkanInstance, mDebugMessenger, nullptr);
-#endif	// _DEBUG
+	mDebugMessenger.cleanup();
+#endif
 
 	vkDestroyDevice(mDevice, nullptr);
 	vkDestroyInstance(mVulkanInstance, nullptr);

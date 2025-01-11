@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "vulkan/vulkan.h"
+#include "debugMessenger.hpp"
 
 class GLFWwindow;
 
@@ -20,28 +21,18 @@ private:
 	VkQueue mGraphicsQueue = VK_NULL_HANDLE;
 
 #ifdef _DEBUG
-	VkDebugUtilsMessengerEXT mDebugMessenger = VK_NULL_HANDLE;
-#endif
-
-#ifdef _DEBUG
-	PFN_vkCreateDebugUtilsMessengerEXT createDebugUtilsMessage = VK_NULL_HANDLE;
-	PFN_vkDestroyDebugUtilsMessengerEXT destroyDebugUtilsMessage = VK_NULL_HANDLE;
+	DebugMessenger mDebugMessenger;
 #endif
 
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData);
 
 	void initWindow();
 	void initVulkan();
 	void createVulkanInstance();
-	void setupDebugMessenger();
+	void initDebugMessenger();
 	void pickPhysicalDevice();
 	void createLogicalDevice();
 	bool isDeviceSuitable(const VkPhysicalDevice device) const;
-	VkDebugUtilsMessengerCreateInfoEXT getDebugMessengerCreateInfo();
-	void initializeExtensionFunctions();
 
 	void checkMandatoryExtensionsForSupport(const std::vector<const char*>& mandatoryExtensions);
 	void checkValidationLayerSupport();
