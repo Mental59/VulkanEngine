@@ -318,7 +318,7 @@ void HelloTriangleApplication::checkMandatoryExtensionsForSupport(const std::vec
 		std::cout << supportedExtensions[i].extensionName << ", ";
 	}
 	std::cout << supportedExtensions[supportedExtensionCount - 1].extensionName << std::endl;
-#endif	// DEBUG
+#endif
 
 	for (const char* mandatoryExtension : mandatoryExtensions)
 	{
@@ -382,7 +382,7 @@ std::vector<const char*> HelloTriangleApplication::getMandatoryExtensions()
 
 #ifdef _DEBUG
 	mandatoryExtensionVector.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-#endif	// _DEBUG
+#endif
 
 	return mandatoryExtensionVector;
 }
