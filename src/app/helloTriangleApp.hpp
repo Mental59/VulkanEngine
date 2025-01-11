@@ -21,6 +21,11 @@ private:
 	VkQueue mGraphicsQueue = VK_NULL_HANDLE;
 	VkQueue mPresentQueue = VK_NULL_HANDLE;
 	VkSurfaceKHR mSurface = VK_NULL_HANDLE;
+	VkSwapchainKHR mSwapChain = VK_NULL_HANDLE;
+	VkFormat mSwapChainImageFormat;
+	VkExtent2D mSwapChainExtent;
+
+	std::vector<VkImage> mSwapChainImages;
 
 #ifdef _DEBUG
 	DebugMessenger mDebugMessenger;
@@ -31,11 +36,13 @@ private:
 	void initWindow();
 	void initVulkan();
 	void createVulkanInstance();
+	void createSwapChain();
 	void initDebugMessenger();
 	void createSurface();
 	void pickPhysicalDevice();
 	void createLogicalDevice();
 	bool isDeviceSuitable(const VkPhysicalDevice device) const;
+	bool checkDeviceExtensionSupport(const VkPhysicalDevice device) const;
 
 	void checkMandatoryExtensionsForSupport(const std::vector<const char*>& mandatoryExtensions);
 	void checkValidationLayerSupport();
