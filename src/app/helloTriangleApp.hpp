@@ -26,6 +26,7 @@ private:
 	VkExtent2D mSwapChainExtent;
 
 	std::vector<VkImage> mSwapChainImages;
+	std::vector<VkImageView> mSwapChainImageViews;
 
 #ifdef _DEBUG
 	DebugMessenger mDebugMessenger;
@@ -37,6 +38,7 @@ private:
 	void initVulkan();
 	void createVulkanInstance();
 	void createSwapChain();
+	void createImageViews();
 	void initDebugMessenger();
 	void createSurface();
 	void pickPhysicalDevice();
