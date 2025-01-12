@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
+#include <array>
 #include <unordered_set>
 #include <format>
 #include "helloTriangleApp.hpp"
@@ -17,8 +18,8 @@
 static constexpr int WINDOW_WIDTH = 1280;
 static constexpr int WINDOW_HEIGHT = 720;
 
-const std::vector<const char*> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
-const std::vector<const char*> DEVICE_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+static constexpr std::array<const char*, 1> VALIDATION_LAYERS{"VK_LAYER_KHRONOS_validation"};
+static constexpr std::array<const char*, 1> DEVICE_EXTENSIONS{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 HelloTriangleApplication::~HelloTriangleApplication()
 {
