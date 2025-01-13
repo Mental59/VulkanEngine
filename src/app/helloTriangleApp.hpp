@@ -39,6 +39,7 @@ private:
 	void createVulkanInstance();
 	void createSwapChain();
 	void createImageViews();
+	void createGraphicsPipeline();
 	void initDebugMessenger();
 	void createSurface();
 	void pickPhysicalDevice();

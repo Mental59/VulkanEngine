@@ -11,14 +11,15 @@ project(${PROJECT_NAME} VERSION 0.0.1)
 
 file(GLOB_RECURSE SOURCES src/*.cpp)
 file(GLOB_RECURSE HEADERS src/*.hpp src/*.h)
+file(GLOB_RECURSE SHADERS src/*.frag src/*.vert)
 
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES} ${HEADERS})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES} ${HEADERS} ${SHADERS})
 
 find_package(glm REQUIRED)
 find_package(glfw3 3.4 REQUIRED)
 find_package(Vulkan REQUIRED)
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${SHADERS})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 

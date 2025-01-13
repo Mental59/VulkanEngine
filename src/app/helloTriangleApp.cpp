@@ -14,6 +14,7 @@
 #include "helloTriangleApp.hpp"
 #include "graphics/vulkan/queue.hpp"
 #include "graphics/vulkan/swapchain.hpp"
+#include "graphics/vulkan/pipeline.hpp"
 
 static constexpr int WINDOW_WIDTH = 1280;
 static constexpr int WINDOW_HEIGHT = 720;
@@ -63,6 +64,7 @@ void HelloTriangleApplication::initVulkan()
 	createLogicalDevice();
 	createSwapChain();
 	createImageViews();
+	createGraphicsPipeline();
 }
 
 void HelloTriangleApplication::createVulkanInstance()
@@ -303,6 +305,32 @@ void HelloTriangleApplication::createImageViews()
 			throw std::runtime_error("ERROR: failed to create image views!");
 		}
 	}
+}
+
+void HelloTriangleApplication::createGraphicsPipeline()
+{
+	std::vector<char> vertShaderCode = readShaderFile("../build/shaders/baseVert.spv");
+	std::vector<char> fragShaderCode = readShaderFile("../build/shaders/baseFrag.spv");
+
+	VkShaderModule vertShaderModule = createShaderModule(mDevice, vertShaderCode);
+	VkShaderModule fragShaderModule = createShaderModule(mDevice, fragShaderCode);
+
+	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vertShaderStageInfo.module = vertShaderModule;
+	vertShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageInfo.module = fragShaderModule;
+	fragShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+
+	vkDestroyShaderModule(mDevice, vertShaderModule, nullptr);
+	vkDestroyShaderModule(mDevice, fragShaderModule, nullptr);
 }
 
 void HelloTriangleApplication::checkMandatoryExtensionsForSupport(const std::vector<const char*>& mandatoryExtensions)
