@@ -22,8 +22,11 @@ private:
 	VkQueue mPresentQueue = VK_NULL_HANDLE;
 	VkSurfaceKHR mSurface = VK_NULL_HANDLE;
 	VkSwapchainKHR mSwapChain = VK_NULL_HANDLE;
-	VkFormat mSwapChainImageFormat;
-	VkExtent2D mSwapChainExtent;
+	VkFormat mSwapChainImageFormat{};
+	VkExtent2D mSwapChainExtent{};
+	VkRenderPass mRenderPass = VK_NULL_HANDLE;
+	VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
+	VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
 
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mSwapChainImageViews;
@@ -39,6 +42,7 @@ private:
 	void createVulkanInstance();
 	void createSwapChain();
 	void createImageViews();
+	void createRenderPass();
 	void createGraphicsPipeline();
 	void initDebugMessenger();
 	void createSurface();
