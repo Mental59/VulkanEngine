@@ -27,6 +27,8 @@ private:
 	VkRenderPass mRenderPass = VK_NULL_HANDLE;
 	VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
 	VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
+	VkCommandPool mCommandPool = VK_NULL_HANDLE;
+	VkCommandBuffer mCommandBuffer = VK_NULL_HANDLE;
 
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mSwapChainImageViews;
@@ -40,25 +42,28 @@ private:
 
 	void initWindow();
 	void initVulkan();
+	void startMainLoop();
+	void cleanup();
+
 	void createVulkanInstance();
+	void initDebugMessenger();
+	void createSurface();
+	void pickPhysicalDevice();
+	void createLogicalDevice();
 	void createSwapChain();
 	void createImageViews();
 	void createRenderPass();
 	void createGraphicsPipeline();
 	void createFramebuffers();
-	void initDebugMessenger();
-	void createSurface();
-	void pickPhysicalDevice();
-	void createLogicalDevice();
+	void createCommandPool();
+	void createCommandBuffer();
+
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
 	bool isDeviceSuitable(const VkPhysicalDevice device) const;
 	bool checkDeviceExtensionSupport(const VkPhysicalDevice device) const;
-
 	void checkMandatoryExtensionsForSupport(const std::vector<const char*>& mandatoryExtensions);
 	void checkValidationLayerSupport();
 	bool isExtensionSupported(const char* extensionName, const std::vector<VkExtensionProperties>& supportedExtensions);
 	std::vector<const char*> getMandatoryExtensions();
-
-	void startMainLoop();
-
-	void cleanup();
 };
