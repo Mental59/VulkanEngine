@@ -30,6 +30,7 @@ private:
 
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mSwapChainImageViews;
+	std::vector<VkFramebuffer> mSwapChainFramebuffers;
 
 #ifdef _DEBUG
 	DebugMessenger mDebugMessenger;
@@ -44,6 +45,7 @@ private:
 	void createImageViews();
 	void createRenderPass();
 	void createGraphicsPipeline();
+	void createFramebuffers();
 	void initDebugMessenger();
 	void createSurface();
 	void pickPhysicalDevice();

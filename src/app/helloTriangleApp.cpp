@@ -66,6 +66,7 @@ void HelloTriangleApplication::initVulkan()
 	createImageViews();
 	createRenderPass();
 	createGraphicsPipeline();
+	createFramebuffers();
 }
 
 void HelloTriangleApplication::createVulkanInstance()
@@ -482,6 +483,30 @@ void HelloTriangleApplication::createGraphicsPipeline()
 	vkDestroyShaderModule(mDevice, fragShaderModule, nullptr);
 }
 
+void HelloTriangleApplication::createFramebuffers()
+{
+	mSwapChainFramebuffers.resize(mSwapChainImageViews.size());
+
+	for (size_t i = 0; i < mSwapChainImageViews.size(); i++)
+	{
+		std::array<VkImageView, 1> attachments{mSwapChainImageViews[i]};
+
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = mRenderPass;
+		framebufferInfo.attachmentCount = attachments.size();
+		framebufferInfo.pAttachments = attachments.data();
+		framebufferInfo.width = mSwapChainExtent.width;
+		framebufferInfo.height = mSwapChainExtent.height;
+		framebufferInfo.layers = 1;
+
+		if (vkCreateFramebuffer(mDevice, &framebufferInfo, nullptr, &mSwapChainFramebuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("ERROR: failed to create framebuffer!");
+		}
+	}
+}
+
 void HelloTriangleApplication::checkMandatoryExtensionsForSupport(const std::vector<const char*>& mandatoryExtensions)
 {
 	uint32_t supportedExtensionCount = 0;
@@ -596,6 +621,11 @@ void HelloTriangleApplication::cleanup()
 #ifdef _DEBUG
 	mDebugMessenger.cleanup();
 #endif
+
+	for (VkFramebuffer framebuffer : mSwapChainFramebuffers)
+	{
+		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
+	}
 
 	for (VkImageView imageView : mSwapChainImageViews)
 	{
