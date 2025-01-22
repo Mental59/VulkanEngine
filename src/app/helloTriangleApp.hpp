@@ -29,6 +29,9 @@ private:
 	VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
 	VkCommandPool mCommandPool = VK_NULL_HANDLE;
 	VkCommandBuffer mCommandBuffer = VK_NULL_HANDLE;
+	VkSemaphore mImageAvailableSemaphore = VK_NULL_HANDLE;
+	VkSemaphore mRenderFinishedSemaphore = VK_NULL_HANDLE;
+	VkFence mInFlightFence = VK_NULL_HANDLE;
 
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mSwapChainImageViews;
@@ -57,6 +60,9 @@ private:
 	void createFramebuffers();
 	void createCommandPool();
 	void createCommandBuffer();
+	void createSyncObjects();
+
+	void drawFrame();
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
