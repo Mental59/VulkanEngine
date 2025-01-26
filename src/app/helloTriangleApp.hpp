@@ -1,9 +1,12 @@
 #pragma once
 #include <vector>
+#include <array>
 #include "vulkan/vulkan.h"
 #include "debugMessenger.hpp"
 
 class GLFWwindow;
+
+constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
 
 class HelloTriangleApplication
 {
@@ -28,10 +31,10 @@ private:
 	VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
 	VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
 	VkCommandPool mCommandPool = VK_NULL_HANDLE;
-	VkCommandBuffer mCommandBuffer = VK_NULL_HANDLE;
-	VkSemaphore mImageAvailableSemaphore = VK_NULL_HANDLE;
-	VkSemaphore mRenderFinishedSemaphore = VK_NULL_HANDLE;
-	VkFence mInFlightFence = VK_NULL_HANDLE;
+	std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
+	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
+	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mRenderFinishedSemaphores;
+	std::array<VkFence, MAX_FRAMES_IN_FLIGHT> mInFlightFences;
 
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mSwapChainImageViews;
@@ -62,7 +65,7 @@ private:
 	void createCommandBuffer();
 	void createSyncObjects();
 
-	void drawFrame();
+	void drawFrame(uint32_t currentFrame);
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
