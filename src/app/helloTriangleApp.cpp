@@ -619,7 +619,7 @@ void HelloTriangleApplication::createSyncObjects()
 
 void HelloTriangleApplication::recreateSwapchain()
 {
-	int width = 0, height = 0;
+	int width, height;
 	do
 	{
 		glfwGetFramebufferSize(mWindow, &width, &height);
@@ -633,8 +633,6 @@ void HelloTriangleApplication::recreateSwapchain()
 	createSwapChain();
 	createImageViews();
 	createFramebuffers();
-
-	std::cout << "swap chain has been recreated\n";
 }
 
 void HelloTriangleApplication::drawFrame(uint32_t currentFrame)
