@@ -40,16 +40,20 @@ private:
 	std::vector<VkImageView> mSwapChainImageViews;
 	std::vector<VkFramebuffer> mSwapChainFramebuffers;
 
+	bool mFramebufferResized = false;
+
 #ifdef _DEBUG
 	DebugMessenger mDebugMessenger;
 #endif
 
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
+	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 	void initWindow();
 	void initVulkan();
 	void startMainLoop();
 	void cleanup();
+	void cleanupSwapchain();
 
 	void createVulkanInstance();
 	void initDebugMessenger();
@@ -64,6 +68,8 @@ private:
 	void createCommandPool();
 	void createCommandBuffer();
 	void createSyncObjects();
+
+	void recreateSwapchain();
 
 	void drawFrame(uint32_t currentFrame);
 

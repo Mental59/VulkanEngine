@@ -43,16 +43,24 @@ void HelloTriangleApplication::keyCallback(GLFWwindow* window, int key, int scan
 	}
 }
 
+void HelloTriangleApplication::framebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+	HelloTriangleApplication* app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+	app->mFramebufferResized = true;
+}
+
 void HelloTriangleApplication::initWindow()
 {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	mWindow = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", nullptr, nullptr);
+	glfwSetWindowUserPointer(mWindow, this);
 
 	glfwSetKeyCallback(mWindow, keyCallback);
+	glfwSetFramebufferSizeCallback(mWindow, framebufferSizeCallback);
 }
 
 void HelloTriangleApplication::initVulkan()
@@ -88,19 +96,7 @@ void HelloTriangleApplication::startMainLoop()
 
 void HelloTriangleApplication::cleanup()
 {
-#ifdef _DEBUG
-	mDebugMessenger.cleanup();
-#endif
-
-	for (VkFramebuffer framebuffer : mSwapChainFramebuffers)
-	{
-		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
-	}
-
-	for (VkImageView imageView : mSwapChainImageViews)
-	{
-		vkDestroyImageView(mDevice, imageView, nullptr);
-	}
+	cleanupSwapchain();
 
 	for (VkSemaphore semaphore : mImageAvailableSemaphores)
 	{
@@ -116,15 +112,39 @@ void HelloTriangleApplication::cleanup()
 	}
 
 	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
+
 	vkDestroyPipeline(mDevice, mGraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
+
 	vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
-	vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
+
 	vkDestroyDevice(mDevice, nullptr);
+
+#ifdef _DEBUG
+	mDebugMessenger.cleanup();
+#endif
+
 	vkDestroySurfaceKHR(mVulkanInstance, mSurface, nullptr);
+
 	vkDestroyInstance(mVulkanInstance, nullptr);
+
 	glfwDestroyWindow(mWindow);
 	glfwTerminate();
+}
+
+void HelloTriangleApplication::cleanupSwapchain()
+{
+	for (VkFramebuffer framebuffer : mSwapChainFramebuffers)
+	{
+		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
+	}
+
+	for (VkImageView imageView : mSwapChainImageViews)
+	{
+		vkDestroyImageView(mDevice, imageView, nullptr);
+	}
+
+	vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
 }
 
 void HelloTriangleApplication::createVulkanInstance()
@@ -597,14 +617,45 @@ void HelloTriangleApplication::createSyncObjects()
 	}
 }
 
+void HelloTriangleApplication::recreateSwapchain()
+{
+	int width = 0, height = 0;
+	do
+	{
+		glfwGetFramebufferSize(mWindow, &width, &height);
+		glfwWaitEvents();
+	} while (width == 0 || height == 0);
+
+	vkDeviceWaitIdle(mDevice);
+
+	cleanupSwapchain();
+
+	createSwapChain();
+	createImageViews();
+	createFramebuffers();
+
+	std::cout << "swap chain has been recreated\n";
+}
+
 void HelloTriangleApplication::drawFrame(uint32_t currentFrame)
 {
 	vkWaitForFences(mDevice, 1, &mInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(mDevice, 1, &mInFlightFences[currentFrame]);
 
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(
+	VkResult result = vkAcquireNextImageKHR(
 		mDevice, mSwapChain, UINT64_MAX, mImageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		recreateSwapchain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		throw std::runtime_error("ERROR: failed to acquire swap chain image!");
+	}
+
+	vkResetFences(mDevice, 1, &mInFlightFences[currentFrame]);
 
 	vkResetCommandBuffer(mCommandBuffers[currentFrame], 0);
 	recordCommandBuffer(mCommandBuffers[currentFrame], imageIndex);
@@ -638,7 +689,16 @@ void HelloTriangleApplication::drawFrame(uint32_t currentFrame)
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr;
 
-	vkQueuePresentKHR(mPresentQueue, &presentInfo);
+	result = vkQueuePresentKHR(mPresentQueue, &presentInfo);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || mFramebufferResized)
+	{
+		mFramebufferResized = false;
+		recreateSwapchain();
+	}
+	else if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("ERROR: failed to present swap chain image!");
+	}
 }
 
 void HelloTriangleApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
