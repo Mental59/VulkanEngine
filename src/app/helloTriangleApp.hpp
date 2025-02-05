@@ -31,6 +31,8 @@ private:
 	VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
 	VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
 	VkCommandPool mCommandPool = VK_NULL_HANDLE;
+	VkBuffer mVertexBuffer = VK_NULL_HANDLE;
+	VkDeviceMemory mVertexBufferMemory = VK_NULL_HANDLE;
 	std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
 	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
 	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mRenderFinishedSemaphores;
@@ -66,6 +68,7 @@ private:
 	void createGraphicsPipeline();
 	void createFramebuffers();
 	void createCommandPool();
+	void createVertexBuffer();
 	void createCommandBuffer();
 	void createSyncObjects();
 
@@ -81,4 +84,5 @@ private:
 	void checkValidationLayerSupport();
 	bool isExtensionSupported(const char* extensionName, const std::vector<VkExtensionProperties>& supportedExtensions);
 	std::vector<const char*> getMandatoryExtensions();
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 };
