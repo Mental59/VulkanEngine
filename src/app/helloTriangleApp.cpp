@@ -23,11 +23,14 @@ static constexpr int WINDOW_HEIGHT = 720;
 static constexpr std::array<const char*, 1> VALIDATION_LAYERS{"VK_LAYER_KHRONOS_validation"};
 static constexpr std::array<const char*, 1> DEVICE_EXTENSIONS{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-constexpr std::array<Vertex, 3> VERTICES = {{
-	{{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-	{{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-	{{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+constexpr std::array<Vertex, 4> VERTICES = {{
+	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+	{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+	{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}},
 }};
+
+constexpr std::array<uint32_t, 6> INDICES = {0, 1, 2, 2, 3, 0};
 
 HelloTriangleApplication::~HelloTriangleApplication()
 {
@@ -84,6 +87,7 @@ void HelloTriangleApplication::initVulkan()
 	createFramebuffers();
 	createCommandPool();
 	createVertexBuffer();
+	createIndexBuffer();
 	createCommandBuffer();
 	createSyncObjects();
 }
@@ -121,6 +125,9 @@ void HelloTriangleApplication::cleanup()
 
 	vkDestroyBuffer(mDevice, mVertexBuffer, nullptr);
 	vkFreeMemory(mDevice, mVertexBufferMemory, nullptr);
+
+	vkDestroyBuffer(mDevice, mIndexBuffer, nullptr);
+	vkFreeMemory(mDevice, mIndexBufferMemory, nullptr);
 
 	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
 
@@ -604,38 +611,48 @@ void HelloTriangleApplication::createCommandPool()
 
 void HelloTriangleApplication::createVertexBuffer()
 {
-	VkBufferCreateInfo bufferInfo{};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = sizeof(VERTICES[0]) * VERTICES.size();
-	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	VkBuffer stagingBuffer = VK_NULL_HANDLE;
+	VkDeviceMemory stagingBufferMemory = VK_NULL_HANDLE;
 
-	if (vkCreateBuffer(mDevice, &bufferInfo, nullptr, &mVertexBuffer) != VK_SUCCESS)
-	{
-		throw std::runtime_error("ERROR: failed to create vertex buffer!");
-	}
-
-	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(mDevice, mVertexBuffer, &memRequirements);
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(
-		memRequirements.memoryTypeBits,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-	);
-
-	if (vkAllocateMemory(mDevice, &allocInfo, nullptr, &mVertexBufferMemory) != VK_SUCCESS)
-	{
-		throw std::runtime_error("ERROR: failed to allocate vertex buffer memory!");
-	}
-
-	vkBindBufferMemory(mDevice, mVertexBuffer, mVertexBufferMemory, 0);
+	VkDeviceSize bufferSize = sizeof(VERTICES[0]) * VERTICES.size();
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 	void* data;
-	vkMapMemory(mDevice, mVertexBufferMemory, 0, bufferInfo.size, 0, &data);
-	memcpy(data, VERTICES.data(), static_cast<size_t>(bufferInfo.size));
-	vkUnmapMemory(mDevice, mVertexBufferMemory);
+	vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, VERTICES.data(), static_cast<size_t>(bufferSize));
+	vkUnmapMemory(mDevice, stagingBufferMemory);
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mVertexBuffer, mVertexBufferMemory);
+
+	copyBuffer(stagingBuffer, mVertexBuffer, bufferSize);
+
+	vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
+	vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
+}
+
+void HelloTriangleApplication::createIndexBuffer()
+{
+	VkDeviceSize bufferSize = sizeof(INDICES[0]) * INDICES.size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, INDICES.data(), (size_t)bufferSize);
+	vkUnmapMemory(mDevice, stagingBufferMemory);
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mIndexBuffer, mIndexBufferMemory);
+
+	copyBuffer(stagingBuffer, mIndexBuffer, bufferSize);
+
+	vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
+	vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
 }
 
 void HelloTriangleApplication::createCommandBuffer()
@@ -797,8 +814,9 @@ void HelloTriangleApplication::recordCommandBuffer(VkCommandBuffer commandBuffer
 	VkBuffer vertexBuffers[] = {mVertexBuffer};
 	VkDeviceSize offsets[] = {0};
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, mIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdDraw(commandBuffer, static_cast<uint32_t>(VERTICES.size()), 1, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(INDICES.size()), 1, 0, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
 
@@ -937,4 +955,70 @@ uint32_t HelloTriangleApplication::findMemoryType(uint32_t typeFilter, VkMemoryP
 	}
 
 	throw std::runtime_error("ERROR: failed to find suitable memory type!");
+}
+
+void HelloTriangleApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+	VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+{
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(mDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+	{
+		throw std::runtime_error("ERROR: failed to create buffer!");
+	}
+
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(mDevice, buffer, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+	if (vkAllocateMemory(mDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
+	{
+		throw std::runtime_error("ERROR: failed to allocate buffer memory!");
+	}
+
+	vkBindBufferMemory(mDevice, buffer, bufferMemory, 0);
+}
+
+void HelloTriangleApplication::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+{
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = mCommandPool;
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(mDevice, &allocInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	VkBufferCopy copyRegion{};
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = size;
+	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(mGraphicsQueue);
+
+	vkFreeCommandBuffers(mDevice, mCommandPool, 1, &commandBuffer);
 }
