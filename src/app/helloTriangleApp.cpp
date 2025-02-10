@@ -11,11 +11,14 @@
 #include <array>
 #include <unordered_set>
 #include <format>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "helloTriangleApp.hpp"
 #include "graphics/vulkan/queue.hpp"
 #include "graphics/vulkan/swapchain.hpp"
 #include "graphics/vulkan/pipeline.hpp"
 #include "math/vertex.hpp"
+#include "math/uniform.hpp"
 
 static constexpr int WINDOW_WIDTH = 1280;
 static constexpr int WINDOW_HEIGHT = 720;
@@ -83,11 +86,13 @@ void HelloTriangleApplication::initVulkan()
 	createSwapChain();
 	createImageViews();
 	createRenderPass();
+	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
 	createVertexBuffer();
 	createIndexBuffer();
+	createUniformBuffers();
 	createCommandBuffer();
 	createSyncObjects();
 }
@@ -95,10 +100,17 @@ void HelloTriangleApplication::initVulkan()
 void HelloTriangleApplication::startMainLoop()
 {
 	uint32_t currentFrame = 0;
+	double deltaTime = 0.0f;
+	double lastFrameTime = 0.0f;
 
 	while (!glfwWindowShouldClose(mWindow))
 	{
+		double currentTime = glfwGetTime();
+		deltaTime = currentTime - lastFrameTime;
+		lastFrameTime = currentTime;
+
 		glfwPollEvents();
+		update(currentFrame, deltaTime, lastFrameTime);
 		drawFrame(currentFrame);
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
@@ -122,6 +134,14 @@ void HelloTriangleApplication::cleanup()
 	{
 		vkDestroyFence(mDevice, fence, nullptr);
 	}
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		vkDestroyBuffer(mDevice, mUniformBuffers[i], nullptr);
+		vkFreeMemory(mDevice, mUniformBuffersMemory[i], nullptr);
+	}
+
+	vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
 
 	vkDestroyBuffer(mDevice, mVertexBuffer, nullptr);
 	vkFreeMemory(mDevice, mVertexBufferMemory, nullptr);
@@ -435,6 +455,26 @@ void HelloTriangleApplication::createRenderPass()
 	}
 }
 
+void HelloTriangleApplication::createDescriptorSetLayout()
+{
+	VkDescriptorSetLayoutBinding uboLayoutBinding{};
+	uboLayoutBinding.binding = 0;
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.descriptorCount = 1;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uboLayoutBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &uboLayoutBinding;
+
+	if (vkCreateDescriptorSetLayout(mDevice, &layoutInfo, nullptr, &mDescriptorSetLayout) != VK_SUCCESS)
+	{
+		throw std::runtime_error("ERROR: failed to create descriptor set layout!");
+	}
+}
+
 void HelloTriangleApplication::createGraphicsPipeline()
 {
 	std::vector<char> vertShaderCode = readShaderFile("../build/shaders/baseVert.spv");
@@ -533,8 +573,8 @@ void HelloTriangleApplication::createGraphicsPipeline()
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0;
-	pipelineLayoutInfo.pSetLayouts = nullptr;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &mDescriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -655,6 +695,20 @@ void HelloTriangleApplication::createIndexBuffer()
 	vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
 }
 
+void HelloTriangleApplication::createUniformBuffers()
+{
+	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mUniformBuffers[i],
+			mUniformBuffersMemory[i]);
+
+		vkMapMemory(mDevice, mUniformBuffersMemory[i], 0, bufferSize, 0, &mUniformBuffersMapped[i]);
+	}
+}
+
 void HelloTriangleApplication::createCommandBuffer()
 {
 	VkCommandBufferAllocateInfo allocInfo{};
@@ -704,6 +758,20 @@ void HelloTriangleApplication::recreateSwapchain()
 	createSwapChain();
 	createImageViews();
 	createFramebuffers();
+}
+
+void HelloTriangleApplication::update(uint32_t currentImage, double deltaTime, double lastFrameTime)
+{
+	UniformBufferObject ubo{};
+
+	float aspectRatio = static_cast<float>(mSwapChainExtent.width) / static_cast<float>(mSwapChainExtent.height);
+
+	ubo.model = glm::rotate(
+		glm::mat4(1.0f), static_cast<float>(lastFrameTime) * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+	ubo.proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
+
+	memcpy(mUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }
 
 void HelloTriangleApplication::drawFrame(uint32_t currentFrame)

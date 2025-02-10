@@ -28,6 +28,7 @@ private:
 	VkFormat mSwapChainImageFormat{};
 	VkExtent2D mSwapChainExtent{};
 	VkRenderPass mRenderPass = VK_NULL_HANDLE;
+	VkDescriptorSetLayout mDescriptorSetLayout = VK_NULL_HANDLE;
 	VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
 	VkPipeline mGraphicsPipeline = VK_NULL_HANDLE;
 	VkCommandPool mCommandPool = VK_NULL_HANDLE;
@@ -39,6 +40,9 @@ private:
 	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
 	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mRenderFinishedSemaphores;
 	std::array<VkFence, MAX_FRAMES_IN_FLIGHT> mInFlightFences;
+	std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> mUniformBuffers;
+	std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT> mUniformBuffersMemory;
+	std::array<void*, MAX_FRAMES_IN_FLIGHT> mUniformBuffersMapped;
 
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mSwapChainImageViews;
@@ -67,16 +71,19 @@ private:
 	void createSwapChain();
 	void createImageViews();
 	void createRenderPass();
+	void createDescriptorSetLayout();
 	void createGraphicsPipeline();
 	void createFramebuffers();
 	void createCommandPool();
 	void createVertexBuffer();
 	void createIndexBuffer();
+	void createUniformBuffers();
 	void createCommandBuffer();
 	void createSyncObjects();
 
 	void recreateSwapchain();
 
+	void update(uint32_t currentImage, double deltaTime, double lastFrameTime);
 	void drawFrame(uint32_t currentFrame);
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
