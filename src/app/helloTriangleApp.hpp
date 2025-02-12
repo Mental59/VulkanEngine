@@ -36,6 +36,7 @@ private:
 	VkBuffer mIndexBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory mVertexBufferMemory = VK_NULL_HANDLE;
 	VkDeviceMemory mIndexBufferMemory = VK_NULL_HANDLE;
+	VkDescriptorPool mDescriptorPool = VK_NULL_HANDLE;
 	std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
 	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
 	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mRenderFinishedSemaphores;
@@ -43,6 +44,7 @@ private:
 	std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> mUniformBuffers;
 	std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT> mUniformBuffersMemory;
 	std::array<void*, MAX_FRAMES_IN_FLIGHT> mUniformBuffersMapped;
+	std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mDescriptorSets;
 
 	std::vector<VkImage> mSwapChainImages;
 	std::vector<VkImageView> mSwapChainImageViews;
@@ -78,6 +80,8 @@ private:
 	void createVertexBuffer();
 	void createIndexBuffer();
 	void createUniformBuffers();
+	void createDescriptorPool();
+	void createDescriptorSets();
 	void createCommandBuffer();
 	void createSyncObjects();
 
@@ -86,7 +90,7 @@ private:
 	void update(uint32_t currentImage, double deltaTime, double lastFrameTime);
 	void drawFrame(uint32_t currentFrame);
 
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame);
 
 	bool isDeviceSuitable(const VkPhysicalDevice device) const;
 	bool checkDeviceExtensionSupport(const VkPhysicalDevice device) const;

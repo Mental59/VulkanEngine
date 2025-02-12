@@ -93,6 +93,8 @@ void HelloTriangleApplication::initVulkan()
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffers();
+	createDescriptorPool();
+	createDescriptorSets();
 	createCommandBuffer();
 	createSyncObjects();
 }
@@ -140,6 +142,8 @@ void HelloTriangleApplication::cleanup()
 		vkDestroyBuffer(mDevice, mUniformBuffers[i], nullptr);
 		vkFreeMemory(mDevice, mUniformBuffersMemory[i], nullptr);
 	}
+
+	vkDestroyDescriptorPool(mDevice, mDescriptorPool, nullptr);
 
 	vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
 
@@ -709,6 +713,64 @@ void HelloTriangleApplication::createUniformBuffers()
 	}
 }
 
+void HelloTriangleApplication::createDescriptorPool()
+{
+	VkDescriptorPoolSize poolSize{};
+	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+	VkDescriptorPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
+	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+	if (vkCreateDescriptorPool(mDevice, &poolInfo, nullptr, &mDescriptorPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("ERROR: failed to create descriptor pool!");
+	}
+}
+
+void HelloTriangleApplication::createDescriptorSets()
+{
+	std::array<VkDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT> layouts{
+		mDescriptorSetLayout,
+		mDescriptorSetLayout,
+	};
+
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = mDescriptorPool;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	allocInfo.pSetLayouts = layouts.data();
+
+	if (vkAllocateDescriptorSets(mDevice, &allocInfo, mDescriptorSets.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("ERROR: failed to allocate descriptor sets!");
+	}
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = mUniformBuffers[i];
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(UniformBufferObject);
+
+		VkWriteDescriptorSet descriptorWrite{};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = mDescriptorSets[i];
+		descriptorWrite.dstBinding = 0;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo = &bufferInfo;
+		descriptorWrite.pImageInfo = nullptr;
+		descriptorWrite.pTexelBufferView = nullptr;
+
+		vkUpdateDescriptorSets(mDevice, 1, &descriptorWrite, 0, nullptr);
+	}
+}
+
 void HelloTriangleApplication::createCommandBuffer()
 {
 	VkCommandBufferAllocateInfo allocInfo{};
@@ -768,7 +830,7 @@ void HelloTriangleApplication::update(uint32_t currentImage, double deltaTime, d
 
 	ubo.model = glm::rotate(
 		glm::mat4(1.0f), static_cast<float>(lastFrameTime) * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	ubo.proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
 	memcpy(mUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -795,7 +857,7 @@ void HelloTriangleApplication::drawFrame(uint32_t currentFrame)
 	vkResetFences(mDevice, 1, &mInFlightFences[currentFrame]);
 
 	vkResetCommandBuffer(mCommandBuffers[currentFrame], 0);
-	recordCommandBuffer(mCommandBuffers[currentFrame], imageIndex);
+	recordCommandBuffer(mCommandBuffers[currentFrame], imageIndex, currentFrame);
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -838,7 +900,8 @@ void HelloTriangleApplication::drawFrame(uint32_t currentFrame)
 	}
 }
 
-void HelloTriangleApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void HelloTriangleApplication::recordCommandBuffer(
+	VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame)
 {
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -884,6 +947,8 @@ void HelloTriangleApplication::recordCommandBuffer(VkCommandBuffer commandBuffer
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, mIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1,
+		&mDescriptorSets[currentFrame], 0, nullptr);
 	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(INDICES.size()), 1, 0, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
