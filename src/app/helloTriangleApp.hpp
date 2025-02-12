@@ -87,7 +87,7 @@ private:
 
 	void recreateSwapchain();
 
-	void update(uint32_t currentImage, double deltaTime, double lastFrameTime);
+	void update(uint32_t currentFrame, double deltaTime, double lastFrameTime);
 	void drawFrame(uint32_t currentFrame);
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame);

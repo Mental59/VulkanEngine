@@ -822,7 +822,7 @@ void HelloTriangleApplication::recreateSwapchain()
 	createFramebuffers();
 }
 
-void HelloTriangleApplication::update(uint32_t currentImage, double deltaTime, double lastFrameTime)
+void HelloTriangleApplication::update(uint32_t currentFrame, double deltaTime, double lastFrameTime)
 {
 	UniformBufferObject ubo{};
 
@@ -830,10 +830,10 @@ void HelloTriangleApplication::update(uint32_t currentImage, double deltaTime, d
 
 	ubo.model = glm::rotate(
 		glm::mat4(1.0f), static_cast<float>(lastFrameTime) * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	ubo.view = glm::lookAt(glm::vec3(2.0f, -2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	ubo.proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
-	memcpy(mUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+	memcpy(mUniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 }
 
 void HelloTriangleApplication::drawFrame(uint32_t currentFrame)
