@@ -19,6 +19,7 @@
 #include "graphics/vulkan/pipeline.hpp"
 #include "math/vertex.hpp"
 #include "math/uniform.hpp"
+#include "math/vectors.hpp"
 
 static constexpr int WINDOW_WIDTH = 1280;
 static constexpr int WINDOW_HEIGHT = 720;
@@ -830,8 +831,12 @@ void HelloTriangleApplication::update(uint32_t currentFrame, double deltaTime, d
 
 	ubo.model = glm::rotate(
 		glm::mat4(1.0f), static_cast<float>(lastFrameTime) * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, -2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glm::vec3 cameraPos(1.0f, 0.5f, -2.0f);
+	ubo.view = glm::lookAt(cameraPos, Direction::CENTER, Direction::UP);
+
 	ubo.proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
+	ubo.proj[1][1] *= -1;  // invert y axis
 
 	memcpy(mUniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 }
