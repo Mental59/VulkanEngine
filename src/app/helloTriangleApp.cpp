@@ -27,14 +27,28 @@ static constexpr int WINDOW_HEIGHT = 720;
 static constexpr std::array<const char*, 1> VALIDATION_LAYERS{"VK_LAYER_KHRONOS_validation"};
 static constexpr std::array<const char*, 1> DEVICE_EXTENSIONS{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-constexpr std::array<Vertex, 4> VERTICES = {{
+constexpr std::array<Vertex, 8> VERTICES = {{
+	// front
 	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
 	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
 	{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
 	{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+
+	// back
+	{{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+	{{0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}},
+	{{0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}},
+	{{-0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}},
 }};
 
-constexpr std::array<uint32_t, 6> INDICES = {0, 1, 2, 2, 3, 0};
+constexpr std::array<uint32_t, 6 * 6> INDICES = {
+	0, 1, 2, 2, 3, 0,  // front
+	4, 0, 3, 3, 7, 4,  // left
+	1, 5, 6, 6, 2, 1,  // right
+	5, 4, 7, 7, 6, 5,  // back
+	4, 5, 1, 1, 0, 4,  // up
+	3, 2, 6, 6, 7, 3,  // down
+};
 
 HelloTriangleApplication::~HelloTriangleApplication()
 {
@@ -831,8 +845,12 @@ void HelloTriangleApplication::update(uint32_t currentFrame, double deltaTime, d
 
 	ubo.model = glm::rotate(
 		glm::mat4(1.0f), static_cast<float>(lastFrameTime) * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.model =
+		glm::rotate(ubo.model, static_cast<float>(lastFrameTime) * glm::radians(60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	ubo.model =
+		glm::rotate(ubo.model, static_cast<float>(lastFrameTime) * glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-	glm::vec3 cameraPos(1.0f, 0.5f, -2.0f);
+	glm::vec3 cameraPos(2.0f, -2.0f, -2.0f);
 	ubo.view = glm::lookAt(cameraPos, Direction::CENTER, Direction::UP);
 
 	ubo.proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
