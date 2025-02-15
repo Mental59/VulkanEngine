@@ -120,17 +120,32 @@ void HelloTriangleApplication::startMainLoop()
 	double deltaTime = 0.0f;
 	double lastFrameTime = 0.0f;
 
+	constexpr uint32_t fpsTicksUpdate = 500;
+	uint32_t currentTick = 0;
+	double averageFps = 0.0;
+
 	while (!glfwWindowShouldClose(mWindow))
 	{
 		double currentTime = glfwGetTime();
 		deltaTime = currentTime - lastFrameTime;
 		lastFrameTime = currentTime;
 
+		double fps = 1.0 / deltaTime;
+		averageFps += fps / fpsTicksUpdate;
+
+		if (++currentTick == fpsTicksUpdate)
+		{
+			std::cout << "\rFPS: " << averageFps;
+			currentTick = 0;
+			averageFps = 0.0;
+		}
+
 		glfwPollEvents();
 		update(currentFrame, deltaTime, lastFrameTime);
 		drawFrame(currentFrame);
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
+	std::cout << '\n';
 
 	vkDeviceWaitIdle(mDevice);
 }
