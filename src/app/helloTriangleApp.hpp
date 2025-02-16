@@ -39,6 +39,9 @@ private:
 	VkDescriptorPool mDescriptorPool = VK_NULL_HANDLE;
 	VkImage mTextureImage = VK_NULL_HANDLE;
 	VkDeviceMemory mTextureImageMemory = VK_NULL_HANDLE;
+	VkImageView mTextureImageView = VK_NULL_HANDLE;
+	VkSampler mTextureSampler = VK_NULL_HANDLE;
+
 	std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
 	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
 	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mRenderFinishedSemaphores;
@@ -80,6 +83,8 @@ private:
 	void createFramebuffers();
 	void createCommandPool();
 	void createTextureImage();
+	void createTextureImageView();
+	void createTextureSampler();
 	void createVertexBuffer();
 	void createIndexBuffer();
 	void createUniformBuffers();
@@ -111,4 +116,5 @@ private:
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+	VkImageView createImageView(VkImage image, VkFormat format);
 };
