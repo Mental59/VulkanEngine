@@ -18,18 +18,27 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES} ${HEADERS} ${SHAD
 find_package(glm REQUIRED)
 find_package(glfw3 3.4 REQUIRED)
 find_package(Vulkan REQUIRED)
+find_package(stb REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${SHADERS})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
-target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
+target_link_libraries(
+  ${PROJECT_NAME} PRIVATE
+  glm::glm
+  glfw
+  Vulkan::Vulkan
+  stb::stb
+)
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_VULKAN)
-target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)
-target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_compile_definitions(
+  ${PROJECT_NAME} PRIVATE
+  GLFW_INCLUDE_VULKAN
+  GLM_FORCE_RADIANS
+  GLM_FORCE_DEPTH_ZERO_TO_ONE
+  STB_IMAGE_IMPLEMENTATION
+)
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
