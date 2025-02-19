@@ -41,6 +41,9 @@ private:
 	VkDeviceMemory mTextureImageMemory = VK_NULL_HANDLE;
 	VkImageView mTextureImageView = VK_NULL_HANDLE;
 	VkSampler mTextureSampler = VK_NULL_HANDLE;
+	VkImage mDepthImage = VK_NULL_HANDLE;
+	VkDeviceMemory mDepthImageMemory = VK_NULL_HANDLE;
+	VkImageView mDepthImageView = VK_NULL_HANDLE;
 
 	std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
 	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
@@ -82,6 +85,7 @@ private:
 	void createGraphicsPipeline();
 	void createFramebuffers();
 	void createCommandPool();
+	void createDepthResources();
 	void createTextureImage();
 	void createTextureImageView();
 	void createTextureSampler();
@@ -116,5 +120,9 @@ private:
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-	VkImageView createImageView(VkImage image, VkFormat format);
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+	VkFormat findDepthFormat();
+	VkFormat findSupportedFormat(
+		const VkFormat* candidates, size_t numCandidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	bool hasStencilComponent(VkFormat format);
 };
