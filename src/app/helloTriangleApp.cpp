@@ -27,7 +27,8 @@ static constexpr int WINDOW_HEIGHT = 720;
 static constexpr std::array<const char*, 1> VALIDATION_LAYERS{"VK_LAYER_KHRONOS_validation"};
 static constexpr std::array<const char*, 1> DEVICE_EXTENSIONS{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-constexpr std::array<Vertex, 24> VERTICES = {{
+constexpr size_t NUM_CUBES = 10;
+constexpr std::array<Vertex, 24> CUBE_VERTICES = {{
 	// front
 	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
 	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
@@ -65,7 +66,7 @@ constexpr std::array<Vertex, 24> VERTICES = {{
 	{{-0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 }};
 
-constexpr std::array<uint32_t, 6 * 6> INDICES = {
+constexpr std::array<uint32_t, 36> CUBE_INDICES = {
 	0, 1, 2, 2, 3, 0,		 // front
 	4, 5, 6, 6, 7, 4,		 // left
 	8, 9, 10, 10, 11, 8,	 // right
@@ -782,16 +783,35 @@ void HelloTriangleApplication::createTextureSampler()
 
 void HelloTriangleApplication::createVertexBuffer()
 {
+	std::array<Vertex, NUM_CUBES * CUBE_VERTICES.size()> cubeVertices;
+	for (size_t i = 0; i < NUM_CUBES; i++)
+	{
+		glm::mat4 model(1.0f);
+		model = glm::rotate(model, glm::radians(30.0f * i), glm::vec3(-1.0f, 1.0f, 1.0f) / 3.0f);
+		for (size_t j = 0; j < CUBE_VERTICES.size(); j++)
+		{
+			size_t currentIndex = i * CUBE_VERTICES.size() + j;
+			cubeVertices[currentIndex] = CUBE_VERTICES[j];
+			cubeVertices[currentIndex].Position.z += 1.5f * i;
+
+			glm::vec4 pos(cubeVertices[currentIndex].Position, 1.0f);
+			pos = model * pos;
+
+			cubeVertices[currentIndex].Position = glm::vec3(pos);
+		}
+	}
+
+	constexpr VkDeviceSize bufferSize = sizeof(cubeVertices[0]) * cubeVertices.size();
+
 	VkBuffer stagingBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory stagingBufferMemory = VK_NULL_HANDLE;
 
-	VkDeviceSize bufferSize = sizeof(VERTICES[0]) * VERTICES.size();
 	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 	void* data;
 	vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, VERTICES.data(), static_cast<size_t>(bufferSize));
+	memcpy(data, cubeVertices.data(), static_cast<size_t>(bufferSize));
 	vkUnmapMemory(mDevice, stagingBufferMemory);
 
 	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -805,16 +825,27 @@ void HelloTriangleApplication::createVertexBuffer()
 
 void HelloTriangleApplication::createIndexBuffer()
 {
-	VkDeviceSize bufferSize = sizeof(INDICES[0]) * INDICES.size();
+	std::array<uint32_t, NUM_CUBES * CUBE_INDICES.size()> cubeIndices;
+	for (size_t i = 0; i < NUM_CUBES; i++)
+	{
+		for (size_t j = 0; j < CUBE_INDICES.size(); j++)
+		{
+			size_t currentIndex = i * CUBE_INDICES.size() + j;
+			cubeIndices[currentIndex] = CUBE_INDICES[j] + i * CUBE_VERTICES.size();
+		}
+	}
 
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
+	constexpr VkDeviceSize bufferSize = sizeof(cubeIndices[0]) * cubeIndices.size();
+
+	VkBuffer stagingBuffer = VK_NULL_HANDLE;
+	VkDeviceMemory stagingBufferMemory = VK_NULL_HANDLE;
+
 	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 	void* data;
 	vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, INDICES.data(), (size_t)bufferSize);
+	memcpy(data, cubeIndices.data(), (size_t)bufferSize);
 	vkUnmapMemory(mDevice, stagingBufferMemory);
 
 	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -974,13 +1005,13 @@ void HelloTriangleApplication::update(uint32_t currentFrame, double deltaTime, d
 		glm::mat4(1.0f), static_cast<float>(lastFrameTime) * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	ubo.model =
 		glm::rotate(ubo.model, static_cast<float>(lastFrameTime) * glm::radians(60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	ubo.model =
-		glm::rotate(ubo.model, static_cast<float>(lastFrameTime) * glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	// ubo.model =
+	//	glm::rotate(ubo.model, static_cast<float>(lastFrameTime) * glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-	glm::vec3 cameraPos(2.0f, -2.0f, -2.0f);
+	glm::vec3 cameraPos(2.0f, -2.0f, -5.0f);
 	ubo.view = glm::lookAt(cameraPos, Direction::CENTER, Direction::UP);
 
-	ubo.proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
+	ubo.proj = glm::perspective(glm::radians(70.0f), aspectRatio, 0.1f, 100.0f);
 	ubo.proj[1][1] *= -1;  // invert y axis
 
 	memcpy(mUniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
@@ -1099,7 +1130,7 @@ void HelloTriangleApplication::recordCommandBuffer(
 
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1,
 		&mDescriptorSets[currentFrame], 0, nullptr);
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(INDICES.size()), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(CUBE_INDICES.size() * NUM_CUBES), 1, 0, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
 
