@@ -1,6 +1,11 @@
 #include "vertex.hpp"
 #include <cstddef>
 
+bool Vertex::operator==(const Vertex& other) const
+{
+	return Position == other.Position && Color == other.Color && TexCoord == other.TexCoord;
+}
+
 VkVertexInputBindingDescription Vertex::getBindingDescription()
 {
 	VkVertexInputBindingDescription bindingDescription{};

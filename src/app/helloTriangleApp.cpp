@@ -9,10 +9,13 @@
 #include <vector>
 #include <array>
 #include <unordered_set>
+#include <unordered_map>
 #include <format>
+#include <string>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <stb_image.h>
+#include <tiny_obj_loader.h>
 #include "helloTriangleApp.hpp"
 #include "graphics/vulkan/queue.hpp"
 #include "graphics/vulkan/swapchain.hpp"
@@ -27,53 +30,13 @@ static constexpr int WINDOW_HEIGHT = 720;
 static constexpr std::array<const char*, 1> VALIDATION_LAYERS{"VK_LAYER_KHRONOS_validation"};
 static constexpr std::array<const char*, 1> DEVICE_EXTENSIONS{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-constexpr size_t NUM_CUBES = 10;
-constexpr std::array<Vertex, 24> CUBE_VERTICES = {{
-	// front
-	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+static const char* VERT_SHADER_PATH = "../build/shaders/baseVert.spv";
+static const char* FRAG_SHADER_PATH = "../build/shaders/baseFrag.spv";
+static constexpr const char* TEXTURE_PATH = "../resources/textures/vikingRoom.png";
+static constexpr const char* MODEL_PATH = "../resources/objects/vikingRoom.obj";
 
-	// left
-	{{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{-0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-	// right
-	{{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-	// back
-	{{0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{-0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{-0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-	// up
-	{{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-	// down
-	{{-0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{-0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-}};
-
-constexpr std::array<uint32_t, 36> CUBE_INDICES = {
-	0, 1, 2, 2, 3, 0,		 // front
-	4, 5, 6, 6, 7, 4,		 // left
-	8, 9, 10, 10, 11, 8,	 // right
-	12, 13, 14, 14, 15, 12,	 // back
-	16, 17, 18, 18, 19, 16,	 // up
-	20, 21, 22, 22, 23, 20,	 // down
-};
+static std::vector<Vertex> MODEL_VERTICES;
+static std::vector<uint32_t> MODEL_INDICES;
 
 HelloTriangleApplication::~HelloTriangleApplication()
 {
@@ -134,6 +97,7 @@ void HelloTriangleApplication::initVulkan()
 	createTextureImage();
 	createTextureImageView();
 	createTextureSampler();
+	loadModel();
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffers();
@@ -560,8 +524,8 @@ void HelloTriangleApplication::createDescriptorSetLayout()
 
 void HelloTriangleApplication::createGraphicsPipeline()
 {
-	std::vector<char> vertShaderCode = readShaderFile("../build/shaders/baseVert.spv");
-	std::vector<char> fragShaderCode = readShaderFile("../build/shaders/baseFrag.spv");
+	std::vector<char> vertShaderCode = readShaderFile(VERT_SHADER_PATH);
+	std::vector<char> fragShaderCode = readShaderFile(FRAG_SHADER_PATH);
 
 	VkShaderModule vertShaderModule = createShaderModule(mDevice, vertShaderCode);
 	VkShaderModule fragShaderModule = createShaderModule(mDevice, fragShaderCode);
@@ -611,7 +575,7 @@ void HelloTriangleApplication::createGraphicsPipeline()
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.0f;
 	rasterizer.depthBiasClamp = 0.0f;
@@ -759,8 +723,7 @@ void HelloTriangleApplication::createDepthResources()
 void HelloTriangleApplication::createTextureImage()
 {
 	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels =
-		stbi_load("../resources/textures/container2.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load(TEXTURE_PATH, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	if (!pixels)
@@ -831,27 +794,53 @@ void HelloTriangleApplication::createTextureSampler()
 	}
 }
 
-void HelloTriangleApplication::createVertexBuffer()
+void HelloTriangleApplication::loadModel()
 {
-	std::array<Vertex, NUM_CUBES * CUBE_VERTICES.size()> cubeVertices;
-	for (size_t i = 0; i < NUM_CUBES; i++)
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string warn, err;
+
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH))
 	{
-		glm::mat4 model(1.0f);
-		model = glm::rotate(model, glm::radians(30.0f * i), glm::vec3(-1.0f, 1.0f, 1.0f) / 3.0f);
-		for (size_t j = 0; j < CUBE_VERTICES.size(); j++)
-		{
-			size_t currentIndex = i * CUBE_VERTICES.size() + j;
-			cubeVertices[currentIndex] = CUBE_VERTICES[j];
-			cubeVertices[currentIndex].Position.z += 1.5f * i;
-
-			glm::vec4 pos(cubeVertices[currentIndex].Position, 1.0f);
-			pos = model * pos;
-
-			cubeVertices[currentIndex].Position = glm::vec3(pos);
-		}
+		throw std::runtime_error(std::format("ERROR: warn={} err={}", warn, err));
 	}
 
-	constexpr VkDeviceSize bufferSize = sizeof(cubeVertices[0]) * cubeVertices.size();
+	size_t numIndices = 0;
+	for (const tinyobj::shape_t& shape : shapes)
+	{
+		numIndices += shape.mesh.indices.size();
+	}
+	MODEL_INDICES.reserve(numIndices);
+	MODEL_VERTICES.reserve(numIndices / 3);
+
+	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+	for (const tinyobj::shape_t& shape : shapes)
+	{
+		for (const tinyobj::index_t& index : shape.mesh.indices)
+		{
+			Vertex vertex{};
+
+			vertex.Position = {attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],
+				attrib.vertices[3 * index.vertex_index + 2]};
+
+			vertex.TexCoord = {
+				attrib.texcoords[2 * index.texcoord_index + 0], 1.0f - attrib.texcoords[2 * index.texcoord_index + 1]};
+
+			if (uniqueVertices.count(vertex) == 0)
+			{
+				uniqueVertices[vertex] = static_cast<uint32_t>(MODEL_VERTICES.size());
+				MODEL_VERTICES.push_back(vertex);
+			}
+
+			MODEL_INDICES.push_back(uniqueVertices[vertex]);
+		}
+	}
+}
+
+void HelloTriangleApplication::createVertexBuffer()
+{
+	const VkDeviceSize bufferSize = sizeof(MODEL_VERTICES[0]) * MODEL_VERTICES.size();
 
 	VkBuffer stagingBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory stagingBufferMemory = VK_NULL_HANDLE;
@@ -861,7 +850,7 @@ void HelloTriangleApplication::createVertexBuffer()
 
 	void* data;
 	vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, cubeVertices.data(), static_cast<size_t>(bufferSize));
+	memcpy(data, MODEL_VERTICES.data(), static_cast<size_t>(bufferSize));
 	vkUnmapMemory(mDevice, stagingBufferMemory);
 
 	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -875,17 +864,7 @@ void HelloTriangleApplication::createVertexBuffer()
 
 void HelloTriangleApplication::createIndexBuffer()
 {
-	std::array<uint32_t, NUM_CUBES * CUBE_INDICES.size()> cubeIndices;
-	for (size_t i = 0; i < NUM_CUBES; i++)
-	{
-		for (size_t j = 0; j < CUBE_INDICES.size(); j++)
-		{
-			size_t currentIndex = i * CUBE_INDICES.size() + j;
-			cubeIndices[currentIndex] = CUBE_INDICES[j] + i * CUBE_VERTICES.size();
-		}
-	}
-
-	constexpr VkDeviceSize bufferSize = sizeof(cubeIndices[0]) * cubeIndices.size();
+	const VkDeviceSize bufferSize = sizeof(MODEL_INDICES[0]) * MODEL_INDICES.size();
 
 	VkBuffer stagingBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory stagingBufferMemory = VK_NULL_HANDLE;
@@ -895,7 +874,7 @@ void HelloTriangleApplication::createIndexBuffer()
 
 	void* data;
 	vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, cubeIndices.data(), (size_t)bufferSize);
+	memcpy(data, MODEL_INDICES.data(), (size_t)bufferSize);
 	vkUnmapMemory(mDevice, stagingBufferMemory);
 
 	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -1052,17 +1031,15 @@ void HelloTriangleApplication::update(uint32_t currentFrame, double deltaTime, d
 
 	float aspectRatio = static_cast<float>(mSwapChainExtent.width) / static_cast<float>(mSwapChainExtent.height);
 
-	ubo.model = glm::rotate(
-		glm::mat4(1.0f), static_cast<float>(lastFrameTime) * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.model = glm::mat4(1.0f);
+	ubo.model = glm::rotate(ubo.model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	ubo.model =
-		glm::rotate(ubo.model, static_cast<float>(lastFrameTime) * glm::radians(60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	// ubo.model =
-	//	glm::rotate(ubo.model, static_cast<float>(lastFrameTime) * glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::rotate(ubo.model, static_cast<float>(lastFrameTime) * glm::radians(30.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 
-	glm::vec3 cameraPos(2.0f, -2.0f, -5.0f);
+	glm::vec3 cameraPos(0.75f, -1.0f, -0.75f);
 	ubo.view = glm::lookAt(cameraPos, Direction::CENTER, Direction::UP);
 
-	ubo.proj = glm::perspective(glm::radians(70.0f), aspectRatio, 0.1f, 100.0f);
+	ubo.proj = glm::perspective(glm::radians(90.0f), aspectRatio, 0.1f, 100.0f);
 	ubo.proj[1][1] *= -1;  // invert y axis
 
 	memcpy(mUniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
@@ -1184,7 +1161,7 @@ void HelloTriangleApplication::recordCommandBuffer(
 
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1,
 		&mDescriptorSets[currentFrame], 0, nullptr);
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(CUBE_INDICES.size() * NUM_CUBES), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(MODEL_INDICES.size()), 1, 0, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
 

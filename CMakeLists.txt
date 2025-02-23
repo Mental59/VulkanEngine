@@ -19,6 +19,7 @@ find_package(glm REQUIRED)
 find_package(glfw3 3.4 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(stb REQUIRED)
+find_package(tinyobjloader REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${SHADERS})
 
@@ -30,6 +31,7 @@ target_link_libraries(
   glfw
   Vulkan::Vulkan
   stb::stb
+  tinyobjloader::tinyobjloader
 )
 
 target_compile_definitions(
@@ -38,6 +40,7 @@ target_compile_definitions(
   GLM_FORCE_RADIANS
   GLM_FORCE_DEPTH_ZERO_TO_ONE
   STB_IMAGE_IMPLEMENTATION
+  TINYOBJLOADER_IMPLEMENTATION
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
