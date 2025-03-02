@@ -45,6 +45,10 @@ private:
 	VkImage mDepthImage = VK_NULL_HANDLE;
 	VkDeviceMemory mDepthImageMemory = VK_NULL_HANDLE;
 	VkImageView mDepthImageView = VK_NULL_HANDLE;
+	VkSampleCountFlagBits mMsaaSamples = VK_SAMPLE_COUNT_1_BIT;
+	VkImage mColorImage = VK_NULL_HANDLE;
+	VkDeviceMemory mColorImageMemory = VK_NULL_HANDLE;
+	VkImageView mColorImageView = VK_NULL_HANDLE;
 
 	std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
 	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
@@ -86,6 +90,7 @@ private:
 	void createGraphicsPipeline();
 	void createFramebuffers();
 	void createCommandPool();
+	void createColorResources();
 	void createDepthResources();
 	void createTextureImage();
 	void createTextureImageView();
@@ -116,8 +121,9 @@ private:
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
 		VkDeviceMemory& bufferMemory);
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling,
-		VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples,
+		VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
+		VkImage& image, VkDeviceMemory& imageMemory);
 	VkCommandBuffer beginSingleTimeCommands();
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 	void transitionImageLayout(
@@ -129,4 +135,5 @@ private:
 		const VkFormat* candidates, size_t numCandidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	bool hasStencilComponent(VkFormat format);
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
+	VkSampleCountFlagBits getMaxUsableSampleCount();
 };
