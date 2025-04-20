@@ -283,6 +283,16 @@ void HelloTriangleApplication::initDebugMessenger()
 
 void HelloTriangleApplication::createSurface()
 {
+	//GLFW executes the following for windows under the hood:
+	//VkWin32SurfaceCreateInfoKHR createInfo{};
+	//createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+	//createInfo.hwnd = glfwGetWin32Window(mWindow);
+	//createInfo.hinstance = GetModuleHandle(nullptr);
+
+	//if (vkCreateWin32SurfaceKHR(mVulkanInstance, &createInfo, nullptr, &mSurface) != VK_SUCCESS)
+	//{
+	//	throw std::runtime_error("ERROR: failed to create window surface!");
+	//}
 	if (glfwCreateWindowSurface(mVulkanInstance, mWindow, nullptr, &mSurface) != VK_SUCCESS)
 	{
 		throw std::runtime_error("ERROR: failed to create window surface!");
